@@ -128,8 +128,41 @@
 
 // HOTBAR
 
+.hotbar {
+    // background-color: blue;
+    padding-top: 20px;
+}
+
+.hotbar-title {
+    background-color: #00000045;
+    margin-top: 4px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: larger;
+    font-weight: 500;
+}
+
+.hotbar > box > box {
+    // background-color: #1414143A;
+    // background-color: #1414143A;
+    // background-color: red;
+    // padding: 5px;
+    border-radius: 5px;
+}
+
+.hotbar-box {
+    // background-color: #1414143A;
+    // background-color: red;
+    padding: 2px;
+    // border-radius: 5px;
+
+}
+
 .hotbar-item {
-    background-color: #1414143A;
+    // background-color: #1414143A;
+    // padding: 5px 5px 5px 5px;
+    padding: 5px 5px 5px 5px;
+    // padding: 3px;
 }
 .hotbar-item:hover {
     background-color: #A1A1A12E;
@@ -138,11 +171,16 @@
 .hotbar-item-active,
 .hotbar-item-active:hover {
     background-color: #A1A1A14E;
+    border-radius: 25px;
 }
 
 .hotbar-item-grabbed {
-    // margin-bottom: 20px;
-    // offset: 20px 0px;q
-    border: solid 1px blue;
-    border-radius: 2px;
+
+    transform: translateY(-5px);
+    // padding-bottom: 10px;
+    // margin: 0px 4px;
+    // margin-bottom: 10px;
+    // offset: 20px 0px;
+    // border: solid 1px blue;
+    // border-radius: 2px;
 }

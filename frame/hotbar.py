@@ -48,6 +48,7 @@ class HotbarItem(EventBox):
         self._initialized = False
         super().__init__(
             css_classes=["hotbar-item"],
+            valign="end",
             child=self.build(),
 
             on_click=self.pressed
@@ -99,6 +100,7 @@ class HotbarItem(EventBox):
         iconname = icon_table.get(self._frame.window.app_id, 'unknown')
         return [
             Icon(
+                css_classes=["hotbar-item-icon"],
                 pixel_size=48,
                 image=iconname,
                 tooltip_text=self._frame.window.bind('title'),
@@ -122,7 +124,7 @@ class Hotbar(Window):
             anchor=[ "bottom" ],
             layer="overlay",
             exclusivity="ignore", # Whether to take up space
-            margin_bottom=120,
+            margin_bottom=75,
             namespace=f"hotbar-window-{monitor}",
             kb_mode="exclusive", # 'exclusive' Will capture all Focus while Active
             popup=True,
@@ -172,14 +174,34 @@ class Hotbar(Window):
     #     print("Active:", active)
     
     def build(self):
+        def title_binding(frame: Frame) -> str:
+            if frame is None:
+                return ""
+            return frame.window.title
         # print("Build")
         return Box(
-            child=self._workspace.bind('frames', lambda frames:
-                [
-                    HotbarItem(frame)
-                    for idx, frame in enumerate(frames)
-                ]
-            )
+            vertical=True,
+            css_classes=[],
+            child=[
+                Box(
+                    css_classes=["hotbar-box"],
+                    valign="end",
+                    halign="center",
+                    child=self._workspace.bind('frames', lambda frames:
+                        [
+                            HotbarItem(frame)
+                            for idx, frame in enumerate(frames)
+                        ]
+                    )
+                ),
+                CenterBox(
+                    center_widget= Label(
+                        css_classes=["hotbar-title"],
+                        halign="center",
+                        label=self._workspace.bind('active_frame', title_binding),
+                    ),
+                ),
+            ]
         )
 
 
