@@ -149,7 +149,7 @@ class WayfireWindow(DataGObject):
             socket.set_focus(self._id)
         self._service.dosocket(do)
         # self._service._socket.set_focus(self._id)
-
+    
     @IgnisProperty
     def activated(self) -> bool:
         return self._activated
@@ -206,6 +206,12 @@ class WayfireWindow(DataGObject):
     def minimized(self) -> bool:
         return self._minimized
     
+    @minimized.setter
+    def set_minimized(self, value: bool):
+        def do(socket: WayfireSocket):
+            socket.set_view_minimized(self.id, value)
+        self._service.dosocket(do)
+
     @IgnisProperty
     def output_id(self) -> int:
         return self._output_id

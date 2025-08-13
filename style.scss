@@ -129,7 +129,7 @@
 // HOTBAR
 
 .hotbar {
-    // background-color: blue;
+    // background-color: rgba(11, 238, 242, 0.358);
     padding-top: 20px;
 }
 
@@ -152,7 +152,7 @@
 
 .hotbar-box {
     // background-color: #1414143A;
-    // background-color: red;
+    // background-color: rgba(0, 255, 98, 0.3);
     padding: 2px;
     // border-radius: 5px;
 
@@ -184,3 +184,22 @@
     // border: solid 1px blue;
     // border-radius: 2px;
 }
+
+// Tag Grid
+.tag-grid-window {
+    background-color: #A1A1A12E;
+    padding: 2px;
+    border-radius: 4px;
+    // border: solid 1px rgb(134, 21, 39);
+}
+
+.tag-grid {
+    
+}
+
+.tag-grid-button {
+    background-color: #A1A1A12E;
+    padding: 2px;
+}
+
+

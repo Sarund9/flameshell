@@ -6,6 +6,7 @@ import datetime
 import time
 
 from typing import Any
+from dataclasses import dataclass
 
 # import gi.widgets as gw # type: ignore
 from gi.repository import Gtk # type: ignore
@@ -31,7 +32,17 @@ from frame import Hotbar
 wayfire = WayfireService.get_default()
 
 def bind(binding: str, callback: callable):
+    # NOTE: callback takes no Arguments
     wayfire.register_binding(binding, mode='normal', exec_always=True, callback=callback)
+
+@dataclass
+class TagBinding:
+    num: int
+    workspace: Workspace
+
+    def exec(self):
+        # print("Pressed:", self.num)
+        self.workspace.toggle_tag(self.num)
 
 def main():
     app = IgnisApp.get_default()
@@ -43,7 +54,10 @@ def main():
     bind('<super> KEY_Q', work.left)
     bind('<super> KEY_W', work.right)
     bind('<super> KEY_SPACE', work.grab)
-    
+    # Tag bindings
+    for i in range(1, 10):
+        bind(f'<super> KEY_{i}', TagBinding(i, work).exec)
+
     hotbars = []
 
     for i in range(monitor.get_n_monitors()):

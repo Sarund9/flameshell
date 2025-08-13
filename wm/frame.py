@@ -14,32 +14,52 @@ class Frame(DataGObject):
         self.workspace: 'Workspace' = workspace
         self._active: bool = False
         self._grab: bool = False
+        self._refcount: int = 0
 
         workspace.connect("active_changed", self._active_changed)
 
         win.connect("closed", lambda win: self.emit("closed"))
+
+        self.window.minimized = True
+
         # self.active = workspace.bind('')
     
     @IgnisSignal
     def closed(self):
         pass
 
-    def active_set(self, value: bool):
-        self._active = value
-        self.notify("active")
-    
-    @IgnisProperty(setter=active_set)
+    @IgnisProperty
     def active(self) -> bool:
         return self._active
 
-
+    @active.setter
+    def set_active(self, value: bool):
+        self._active = value
+        self.notify("active")
+    
     def grab_set(self, value: bool):
         self._grab = value
         self.notify("grab")
     
+    @IgnisProperty
+    def refcount(self) -> int:
+        return self._refcount
+
     @IgnisProperty(setter=grab_set)
     def grab(self) -> bool:
         return self._grab
+
+    def tag_ref(self):
+        self._refcount += 1
+        self.notify('refcount')
+        if self._refcount == 1: # increased from 0 to 1
+            self.window.minimized = False
+    
+    def tag_unref(self):
+        self._refcount -= 1
+        self.notify('refcount')
+        if self._refcount == 0: # decreased from 1 to 0
+            self.window.minimized = True
 
     def _active_changed(self, workspace, old, new):
         if old == self:
