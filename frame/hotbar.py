@@ -1,26 +1,43 @@
 
 
 
+import os.path as osp
 
 from ignis.widgets import *
 from ignis.variable import Variable
-
-from .workspace import Workspace, Frame
 
 from gi.repository import Gtk # type: ignore
 
 from ignis.services.applications import ApplicationsService, Application
 
+from wm import Workspace, Frame
 
-applications = ApplicationsService.get_default()
 
+applications: ApplicationsService = ApplicationsService.get_default()
+apps: list[Application] = applications.apps
+
+# app executable -> app icon
+icon_table: dict[str, str] = {}
+
+def iconname(app: Application):
+    classname = app.app.get_string("StartupWMClass")
+    if classname != None:
+        return classname
+    return osp.basename(app.executable)
+
+for app in apps:
+    key = iconname(app)
+    icon = app.icon
+    if icon is None:
+        icon = 'unknown'
+    icon_table[key] = icon
 
 
 ITEM_ACTIVE_CSS = "hotbar-item-active"
 ITEM_GRABBED_CSS = "hotbar-item-grabbed"
 
 class HotbarItem(EventBox):
-    def __init__(self, frame: Frame, active: bool = False):
+    def __init__(self, frame: Frame):
         self._frame = frame
 
         # frame.workspace.connect("active_changed", )
@@ -37,8 +54,10 @@ class HotbarItem(EventBox):
         )
         self._initialized = True
 
-        if active:
+        if frame.active:
             self.add_css_class(ITEM_ACTIVE_CSS)
+        if frame.grab:
+            self.add_css_class(ITEM_GRABBED_CSS)
 
     def activated(self, frame: Frame, x):
         if self._initialized:
@@ -76,10 +95,12 @@ class HotbarItem(EventBox):
         return 'firefox' if active else 'unknown'
     
     def build(self):
+        # print("Window APPID:", self._frame.window.app_id)
+        iconname = icon_table.get(self._frame.window.app_id, 'unknown')
         return [
             Icon(
                 pixel_size=48,
-                image='unknown',
+                image=iconname,
                 tooltip_text=self._frame.window.bind('title'),
                 # tooltip_text="TIP",
             )
@@ -155,7 +176,7 @@ class Hotbar(Window):
         return Box(
             child=self._workspace.bind('frames', lambda frames:
                 [
-                    HotbarItem(frame, idx==self._workspace._active_idx)
+                    HotbarItem(frame)
                     for idx, frame in enumerate(frames)
                 ]
             )

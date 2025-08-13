@@ -10,49 +10,7 @@ import inspect
 
 from utils import WayfireService, WayfireWindow
 
-
-class Frame(DataGObject):
-    def __init__(self, win: WayfireWindow, workspace: DataGObject):
-        super().__init__()
-        self.window = win
-        self.workspace: 'Workspace' = workspace
-        self._active: bool = False
-        self._grab: bool = False
-
-        workspace.connect("active_changed", self._active_changed)
-
-        win.connect("closed", lambda win: self.emit("closed"))
-        # self.active = workspace.bind('')
-    
-    @IgnisSignal
-    def closed(self):
-        pass
-
-    def active_set(self, value: bool):
-        self._active = value
-        self.notify("active")
-    
-    @IgnisProperty(setter=active_set)
-    def active(self) -> bool:
-        return self._active
-
-
-    def grab_set(self, value: bool):
-        self._grab = value
-        self.notify("grab")
-    
-    @IgnisProperty(setter=grab_set)
-    def grab(self) -> bool:
-        return self._grab
-
-    def _active_changed(self, workspace, old, new):
-        if old == self:
-            self._active = False
-            self.notify("active")
-        if new == self:
-            self._active = True
-            self.notify("active")
-
+from .frame import Frame
 
 
 class Workspace(DataGObject):
@@ -141,7 +99,11 @@ class Workspace(DataGObject):
         
         if not self.shown:
             self.shown_set(True)
-        self.__set_active(self._active_idx - 1)
+
+        if self._grab:
+            self.__swap_items(self._active_idx - 1)
+        else:
+            self.__set_active(self._active_idx - 1)
         
 
     def right(self):
@@ -150,11 +112,13 @@ class Workspace(DataGObject):
         if self._active_idx == len(self._frames) - 1:
             return # Already right-most
 
-
-
         if not self.shown:
             self.shown_set(True)
-        self.__set_active(self._active_idx + 1)
+
+        if self._grab:
+            self.__swap_items(self._active_idx + 1)
+        else:
+            self.__set_active(self._active_idx + 1)
 
     def grab(self):
         frame = self.active_frame
@@ -181,6 +145,23 @@ class Workspace(DataGObject):
     @IgnisProperty(setter=shown_set)
     def shown(self) -> bool:
         return self._shown
+
+    def __swap_items(self, idx: int):
+        active = self.active_frame
+        swap   = self._frames[idx]
+
+        self._frames[idx]               = active
+        self._frames[self._active_idx]  = swap
+
+        self._active_idx = idx
+
+        self.notify('frames')
+
+        # fa = self._frames[a]
+        # fb = self._frames[b]
+        
+        # self._frames[a] = fa
+        # self._frames[b] = fb
 
     def __set_active(self, idx: int):
         prev: Frame = None

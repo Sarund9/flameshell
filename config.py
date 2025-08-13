@@ -25,7 +25,8 @@ from status import Bar
 # from .switcher import Compositor
 from utils import WayfireService, WayfireWindow
 
-from frame import Workspace, Hotbar
+from wm import Workspace
+from frame import Hotbar
 
 wayfire = WayfireService.get_default()
 
