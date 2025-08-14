@@ -36,6 +36,34 @@ class Workspace(DataGObject):
         Emmited when the Active frame Changes
         """
 
+    @IgnisSignal
+    def tag_changed(self, tag: Tag):
+        """
+        Emmited when a tag is changed
+        """
+
+    @IgnisProperty
+    def frames(self) -> list[Frame]:
+        return self._frames
+    
+    @IgnisProperty
+    def active_frame(self) -> Frame | None:
+        if self._active_idx < 0:
+            return None
+        return self._frames[self._active_idx]
+
+    def shown_set(self, value: bool):
+        self._shown = value
+        self.notify("shown")
+
+    @IgnisProperty(setter=shown_set)
+    def shown(self) -> bool:
+        return self._shown
+
+    @IgnisProperty
+    def tags(self) -> list[Tag]:
+        return self._tags
+
     def left(self):
         if len(self._frames) <= 1: # At least 2 frames are needed
             return
@@ -76,33 +104,18 @@ class Workspace(DataGObject):
     def toggle_tag(self, num: int):
         if num < 1 or num > 9:
             return
-        print("Toggle:", num)
+        # print("Toggle:", num)
         idx = num - 1
         tag = self._tags[idx]
-        if self._grab:
+        if not self._grab:
             if self.active_frame in tag:
                 tag.remove(self.active_frame)
             else:
                 tag.add(self.active_frame)
             self.__refresh_tag_focus()
-
-    @IgnisProperty
-    def frames(self) -> list[Frame]:
-        return self._frames
-    
-    @IgnisProperty
-    def active_frame(self) -> Frame | None:
-        if self._active_idx < 0:
-            return None
-        return self._frames[self._active_idx]
-
-    def shown_set(self, value: bool):
-        self._shown = value
-        self.notify("shown")
-
-    @IgnisProperty(setter=shown_set)
-    def shown(self) -> bool:
-        return self._shown
+            self.notify('tags')
+            self.emit('tag_changed', tag)
+            # print("Notify Tags")
 
     def __window_opened(self, wayfire: WayfireService, window: WayfireWindow):
         def on_closed(frame: Frame):

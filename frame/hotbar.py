@@ -12,7 +12,7 @@ from ignis.utils import monitor, Poll
 
 from ignis.services.applications import ApplicationsService, Application
 
-from wm import Workspace, Frame
+from wm import Workspace, Frame, Tag
 
 
 applications: ApplicationsService = ApplicationsService.get_default()
@@ -113,15 +113,23 @@ class HotbarItem(EventBox):
 
 class TagGrid(RevealerWindow):
     __gtype_name__ = "FlameshellTagGrid"
-    def __init__(self, monitor: int):
+    def __init__(self, monitor: int, workspace: Workspace):
+        self._workspace = workspace
+        # self._items = list([self.item(num) for num in range(1, 10)])
+        
+        def frame_binding(frame: Frame):
+            def tags_binding(tags: list[Tag]):
+                return [self.item(frame, idx+1, tag) for idx, tag in enumerate(tags)]
+            
+            return Grid(
+                css_classes=["tag-grid"],
+                column_num=3,
+                row_num=3,
+                # child=[self.item(num) for num in range(1, 10)],
+                child=self._workspace.bind('tags', tags_binding)
+            )
 
-        self._items = list([self.item(num) for num in range(1, 10)])
-
-        grid = Grid(
-            column_num=3,
-            row_num=3,
-            child=self._items,
-        )
+        grid = self._workspace.bind('active_frame', frame_binding)
         self.rev = Revealer(
             transition_type='crossfade',
             transition_duration=100,
@@ -142,8 +150,6 @@ class TagGrid(RevealerWindow):
                 child=[self.rev]
             ),
         )
-
-        # self.toggle()
 
     def track(self, item: HotbarItem, window: Window, container: Box) -> bool:
         ok, rect = item.compute_bounds(container)
@@ -179,23 +185,35 @@ class TagGrid(RevealerWindow):
 
         return False
 
-    def item(self, num: int) -> any:
-        size = 30
-        return Button(
+    def item(self, frame: Frame, num: int, tag: Tag) -> any:
+        size = 32
+        classes = ['tag-grid-button']
+        if frame in tag:
+            classes.append('tag-grid-button-active')
+        btn = Button(
             vexpand=True, hexpand=True,
             width_request=size,
             height_request=size,
-            css_classes=["tag-grid-button"],
+            css_classes=classes,
             child=Label(label=f'{num}'),
         )
+        return btn
 
-    def build(self):
-        return Grid(
-            css_classes=["tag-grid"],
-            column_num=3,
-            row_num=3,
-            child=[self.item(num) for num in range(1, 10)],
-        )
+    # def build(self):
+    #     return self._workspace.bind('active_frame', lambda frame: Grid(
+    #         css_classes=["tag-grid"],
+    #         column_num=3,
+    #         row_num=3,
+    #         # child=[self.item(num) for num in range(1, 10)],
+    #         child=self._workspace.bind('tags', lambda tags:
+    #             [self.item(idx+1, tag) for idx, tag in enumerate(tags)])
+    #     ))
+        # return Grid(
+        #     css_classes=["tag-grid"],
+        #     column_num=3,
+        #     row_num=3,
+        #     child=[self.item(num) for num in range(1, 10)],
+        # )
 
 class Hotbar(Window):
     __gtype_name__ = "FlameshellHotbarWindow"
@@ -210,7 +228,7 @@ class Hotbar(Window):
         self._workspace.connect('notify::frames', self.__frames_changed)
         # self._items.connect("notify::value", self.item_binding)
 
-        self._tg = TagGrid(monitor)
+        self._tg = TagGrid(monitor, workspace)
 
         self._items_container = Box(
             css_classes=["hotbar-box"],
