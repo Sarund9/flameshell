@@ -160,6 +160,9 @@ class TagGrid(RevealerWindow):
         if not mon:
             return False
         
+        ok, r_win = window.compute_bounds(window)
+        window_top = r_win.get_height() - r_win.get_y()
+        
         # Size of the Window
         ok, r_self = self.compute_bounds(self)
         self_width = r_self.get_width()
@@ -171,9 +174,14 @@ class TagGrid(RevealerWindow):
         
         ok, r_con = container.compute_bounds(container)
         container_width = r_con.get_width()
+        container_height = r_con.get_height()
 
         icon_x: int = rect.get_x() + (rect.get_width() / 2)
+        icon_y: int = rect.get_y()
         
+        if icon_x < 1:
+            return True
+
         # top_y
         margin = (monitor_width / 2)
         margin -= (container_width / 2)
@@ -182,8 +190,18 @@ class TagGrid(RevealerWindow):
         margin -= (self_width / 2)
         
         self.margin_left = margin
+        self.margin_bottom = -icon_y + window_top - 5
 
         return False
+
+    def vtrack(self, item: HotbarItem, container: Box):
+        ok, rect = item.compute_bounds(container)
+        if not ok:
+            return
+        
+        icon_y: int = rect.get_y()
+
+        self.margin_bottom = -icon_y + 135
 
     def item(self, frame: Frame, num: int, tag: Tag) -> any:
         size = 32
@@ -225,7 +243,6 @@ class Hotbar(Window):
         self._poll_count: int = 0
 
         self._items = Variable(value=[])
-        self._workspace.connect('notify::frames', self.__frames_changed)
         # self._items.connect("notify::value", self.item_binding)
 
         self._tg = TagGrid(monitor, workspace)
@@ -237,9 +254,13 @@ class Hotbar(Window):
             child=self._items.bind('value'),
         )
 
-        workspace.connect("active_changed", self.active_changed)
-        # workspace.connect("notify::active_frame", self.active_changed)
-        workspace.connect("notify::shown", self.workspace_shown)
+        workspace.connect('active_changed', self.active_changed)
+        workspace.connect('active_moved', lambda x, o, n: self.active_moved())
+        workspace.connect('notify::grabbing', lambda w, y:
+            self.active_moved(True))
+
+        workspace.connect('notify::frames', self.__frames_changed)
+        workspace.connect('notify::shown', self.workspace_shown)
 
         def title_binding(frame: Frame) -> str:
             if frame is None:
@@ -282,13 +303,13 @@ class Hotbar(Window):
         self.add_controller(key_controller)
         key_controller.connect("key-released", self.key_released)
 
-    def workspace_shown(self, workspace: Workspace, x):
+    def workspace_shown(self, workspace: Workspace, shown):
         self.set_visible(workspace.shown)
         self._tg.visible = workspace.shown and workspace.active_frame is not None
 
     def hidden(self, x):
         if self._workspace.shown:
-            self._workspace.shown_set(False)
+            self._workspace.set_shown(False)
 
     def active_changed(self, workspace, old: Frame, new: Frame):
         oldname = "None"
@@ -298,20 +319,28 @@ class Hotbar(Window):
         if new:
             newname = new.window.title
 
-            if self._poll:
-                self._poll.cancel()
+            self.active_moved()
+
+    def active_moved(self, is_grabbing: bool = False):
+        if self._poll:
+            self._poll.cancel()
+        
+        self._poll_count = 0
+        self._poll = Poll(15, self.__track_callback)
+        def cancel(x):
+            self._poll_count += 1
             
-            self._poll_count = 0
-            self._poll = Poll(15, self.track_callback)
-            def cancel(x):
-                self._poll_count += 1
-                # Max 12 attempts
-                if self._poll_count > 12 or self._poll.output == False:
+            if not is_grabbing:
+                if self._poll_count > 12 or not self._poll.output:
                     self._poll.cancel()
-            self._poll.connect('changed', cancel)
+            else:
+                if self._poll_count > 1:
+                    self._poll.cancel()
+            
+        self._poll.connect('changed', cancel)
 
         
-    def track_callback(self, poll: Poll) -> bool:
+    def __track_callback(self, poll: Poll) -> bool:
         try:
             it = self._items.value[self._workspace._active_idx]
             return self._tg.track(it, self, self._items_container)

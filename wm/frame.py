@@ -36,6 +36,17 @@ class Frame(DataGObject):
     def set_active(self, value: bool):
         self._active = value
         self.notify("active")
+        
+        # if value:
+        #     self.tag_ref()
+        # else:
+        #     self.tag_unref()
+        # if value:
+        #     if self._refcount < 1:
+        #         self.window.minimized = False
+        # else:
+        #     if self._refcount < 1:
+        #         self.window.minimized = False
     
     def grab_set(self, value: bool):
         self._grab = value
@@ -68,3 +79,13 @@ class Frame(DataGObject):
         if new == self:
             self._active = True
             self.notify("active")
+
+    # def __update_visible(self):
+    #     if self.window.minimized:
+    #         if self.active:
+    #             self.window.minimized = False
+    #         elif self._refcount > 0:
+    #             self.window.minimized = False
+    #     else:
+    #         if self._refcount < 1 and not self.active:
+    #             self.window.minimized = True

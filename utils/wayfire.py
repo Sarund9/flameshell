@@ -145,6 +145,7 @@ class WayfireWindow(DataGObject):
         super().sync(data)
 
     def focus(self):
+        # print("Focusing:", self._id)
         def do(socket: WayfireSocket):
             socket.set_focus(self._id)
         self._service.dosocket(do)
@@ -209,7 +210,10 @@ class WayfireWindow(DataGObject):
     @minimized.setter
     def set_minimized(self, value: bool):
         def do(socket: WayfireSocket):
-            socket.set_view_minimized(self.id, value)
+            try:
+                socket.set_view_minimized(self.id, value)
+            except:
+                pass
         self._service.dosocket(do)
 
     @IgnisProperty
