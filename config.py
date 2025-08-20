@@ -18,6 +18,7 @@ from ignis.widgets import *
 from ignis.utils import Utils
 from ignis.utils import monitor, icon
 from ignis.services.applications import ApplicationsService, Application, application
+from ignis.variable import Variable
 
 from ignis.app import IgnisApp
 
@@ -63,6 +64,7 @@ def main():
     for i in range(monitor.get_n_monitors()):
         Bar(i)
         hotbars.append(Hotbar(i, work))
+
     
     # def show():
     #     for hb in hotbars:
@@ -78,37 +80,121 @@ def main():
     wayfire.begin_listening()
 
     work.right()
+
+
     # time.sleep(1.5)
 
     # for hb in hotbars:
     #     hb.set_visible(False)
 
 
-class Debug(RegularWindow):
+class Debug(Window):
     __gtype_name__ = "DebugWindow"
     def __init__(self, monitor: int):
+        self._theme: Gtk.IconTheme
 
+        self._list: list[str] = []
 
         super().__init__(
-            css_classes=[],
+            css_classes=['debug'],
             child=self.build(),
-            namespace=f"debug-window-{monitor}",
+            anchor=['left', 'bottom'],
+            kb_mode='on_demand',
+            margin_bottom=15,
+            margin_left=10,
+            layer='bottom',
+            # dynamic_input_region=True,
+            namespace=f"flameshell-debug-{monitor}",
             title="Debug",
-            titlebar=HeaderBar(show_title_buttons=True),
+            # titlebar=HeaderBar(show_title_buttons=True),
         )
+        display = Gtk.Widget.get_display(self)
+
+        itheme = Gtk.IconTheme.get_for_display(display)
+
+        items = itheme.get_icon_names()
+        # print(li)
+        # self._theme = itheme
+        self._list = [i for i in items]
+
 
     def desc(self, win: WayfireWindow):
         return Label(
             label=win.bind("title")
         )
     
+    def search(self, query: str, search_size: int) -> list[Icon]:
+        # itheme: Gtk.IconTheme = self._itheme
+        # print(type(query))
+        count = 0
+        for item in self._list:
+            if not query in item:
+                continue
+            # print(item)
+            yield item
+            count += 1
+            if count >= search_size:
+                break
+        
+        # while count < search_size:
+        #     count += 1
+        #     yield ""
+        # return [ 'unknown', 'what' ]
+    
     def build(self):
+        search_size = 20
+        items = list([Variable(value='') for i in range(0, search_size)])
+
+        def setter(entry: Entry):
+            res = list(self.search(entry.text, search_size))
+            for i in range(0, search_size):
+                if i >= len(res):
+                    items[i].value = ''
+                else:
+                    items[i].value = res[i]
+        
+        entry = Entry(
+            on_change=setter,
+            width_request=300,
+        )
+
+        # def binding(x):
+        #     s = list(self.search(x))
+        #     print(f'SEARCH: {len(s)}')
+
+        #     for item in s:
+        #         yield self.item(item)
+            # return map(self.item, s)
+        size = 72
+
         return Box(
             vertical=True,
-            child=serv.bind('windows', lambda wins: [self.desc(w) for w in wins])
+            child=[
+                entry,
+                Scroll(
+                    height_request=500,
+                    width_request=350,
+                    child=Box(
+                        vertical=True,
+                        child=[
+                            Box(
+                                height_request=70,
+                                # vertical=True,
+                                child=[
+                                    Icon(48, image=item.bind('value')),
+                                    Label(label=item.bind('value')),
+                                ]
+                            ) for item in items
+                        ],
+                    )
+                )
+                
+            ]
+            # child=serv.bind('windows', lambda wins: [self.desc(w) for w in wins])
         )
 
 
+Debug(0)
 
 
 main()

@@ -1,9 +1,9 @@
 
 
-from .pad import StatusPad
-from .clock import StatusClock
+from .pad import Pad
+from .center import ControlCenter
 
 
 __all__ = [
-    'StatusPad', 'StatusClock'
+    'Pad', 'ControlCenter'
 ]

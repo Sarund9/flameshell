@@ -16,9 +16,7 @@ from ignis.utils import Utils
 from ignis.services.network import NetworkService, WifiAccessPoint, WifiDevice
 from ignis.app import IgnisApp
 
-from .center import StatusCenter
-
-from .pad import StatusClock
+from .pad import Pad, ControlCenter
 
 network = NetworkService.get_default()
 
@@ -33,6 +31,22 @@ class Bar(Window):
             self._wifi = WifiStatus(dev)
             break
 
+        left: list[Pad] = [
+            
+        ]
+        center: list[Pad] = [
+
+        ]
+        right: list[Pad] = [
+            ControlCenter(monitor),
+        ]
+        # for pad in left:
+        #     pad.initialize(monitor)
+        # for pad in center:
+        #     pad.initialize(monitor)
+        # for pad in right:
+        #     pad.initialize(monitor)
+
         super().__init__(
             anchor=[ "left", "top", "right" ],
             exclusivity="exclusive",
@@ -41,15 +55,15 @@ class Bar(Window):
             layer="top",
             kb_mode="none",
             child=CenterBox(
-                # end_widget=EventBox(
-                #     vertical=False,
-                #     child=[self._wifi, Clock()],
-                #     on_click=lambda x: self._center.toggle(),
-                #     css_classes=["status"],
-                # ),
+                start_widget=Box(
+                    child=left,
+                ),
+                center_widget=Box(
+                    child=center,
+                ),
                 end_widget=Box(
-                    child=[Label(label="<END>")]
-                )
+                    child=right,
+                ),
             ),
             css_classes=["bar"],
         )

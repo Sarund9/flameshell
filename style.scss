@@ -9,6 +9,36 @@
     // backdrop-filter: blur(2px);
 }
 
+.debug {
+    background-color: rgba(18, 18, 18, 0.66);
+    padding: 10px;
+    border-radius: 2px;
+    border: solid 1px rgba(115, 138, 135, 0.808);
+}
+.debug entry {
+    padding: 2px;
+    border-radius: 16px;
+}
+.debug entry * {
+    // color: red;
+    padding: 4px 10px;
+    // margin: ;
+    color: black;
+}
+.debug > box entry {
+    padding-left: 10px;
+}
+window.debug {
+    padding: 0px;
+    // color: red;
+    // background-color: red;
+}
+.debug label {
+    // margin-right: 10px;
+    padding-right: 40px;
+    // color: red;
+}
+
 .box {
     background-color: #12121233;
     border-radius: 4px;
@@ -44,12 +74,61 @@
     // border-width: 2px;
     // border: solid 2px #1414143A;
     // padding: 5px;
-    border-radius: 16px;
-    margin: 5px 3px 3px 2px;
+    // border-radius: 16px;
+    // margin: 5px 3px 3px 2px;
+}
+
+// SCALE (SLIDERS)
+
+scale.status-pad {
+    all: unset;
+
+    * {
+        all: unset;
+    }
+}
+
+scale.status-pad trough {
+    background: red;
+}
+
+scale.status-pad trough,
+scale.status-pad trough highlight {
+    // background-color: red;
+    // background: #202020FF;
+    border-radius: 1rem 1rem 1rem 1rem;
+    // margin-right: -6px;
+    min-height: 1.3rem;
+    min-width: 1.3rem;
+}
+
+scale.status-pad trough highlight {
+    background: #18cabf;
+    // margin-right: -5px;
+    // margin-left: -5px;
+
+}
+
+scale.status-pad mark {
+    background-color: red;
+}
+
+scale.status-pad > trough > slider {
+    background-color: red;
+}
+
+button.status-pad {
+    background-color: #1414142E;
+    border: none;
+}
+
+.control-center {
+    padding: 20px;
+    background-color: #1E1E1EEF;
 }
 
 .status-pad:hover {
-    background-color: #A1A1A12E;
+    // background-color: #A1A1A12E;
 }
 
 .status-window {
@@ -121,8 +200,17 @@
     
 }
 
-.status-revealer {
-    // padding: 5px;
+// .status-revealer {
+//     // padding: 5px;
+// }
+
+// .status-media-player {
+//     // background-color: #00000020;
+// }
+
+.media-player-box {
+    background-color: #00000020;
+
 }
 
 
