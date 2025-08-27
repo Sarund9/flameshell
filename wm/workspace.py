@@ -8,10 +8,17 @@ from ignis.gobject import DataGObject, IgnisProperty, IgnisSignal
 import gi.repository as gir
 import inspect
 
-from utils import WayfireService, WayfireWindow
+from utils import WayfireService, WayfireWindow, Data
 
 from .frame import Frame
 from .tags import Tag
+
+from dataclasses import dataclass
+
+@dataclass
+class Preload:
+    tags: list[int]
+    order: int
 
 
 class Workspace(DataGObject):
@@ -27,6 +34,9 @@ class Workspace(DataGObject):
 
         # Create list of Tags 1-9
         self._tags: list[Tag] = list([Tag() for i in range(1, 10)])
+
+        # Load: int(pid) -> Preload(window data)
+        self._preload: dict = {}
 
         wayfire.connect("window_opened", self.__window_opened)
         wayfire.connect("notify::focused-window", self.__window_focused)
@@ -47,6 +57,12 @@ class Workspace(DataGObject):
     def active_moved(self, prev_idx: int, new_idx: int):
         """
         Emmited when the Active Frame is moved to another Index.
+        """
+
+    @IgnisSignal
+    def state_changed(self):
+        """
+        Emmited when saved state needs to be saved again
         """
 
     @IgnisProperty
@@ -96,6 +112,8 @@ class Workspace(DataGObject):
             self.__swap_items(self._active_idx - 1)
         else:
             self.__set_active(self._active_idx - 1)
+        
+        self.emit('state_changed')
 
     def right(self):
         if len(self._frames) <= 1: # At least 2 frames are needed
@@ -111,6 +129,8 @@ class Workspace(DataGObject):
             self.__swap_items(self._active_idx + 1)
         else:
             self.__set_active(self._active_idx + 1)
+        
+        self.emit('state_changed')
 
     def grab(self):
         frame = self.active_frame
@@ -137,6 +157,65 @@ class Workspace(DataGObject):
             self.notify('tags')
             self.emit('tag_changed', tag)
             # print("Notify Tags")
+            self.emit('state_changed')
+
+    def save(self, data: Data):
+        data.begin('workspace')
+        data.begin('frames')
+        data.clear() # Removes all other keys from Current
+        for idx, frame in enumerate(self._frames):
+            data.begin(str(frame.window.id)) # ID Key
+            data.setval('appid', frame.window.app_id)
+            data.setval('order', idx)
+            data.setval('tags', [x for x in range(0, 9) if frame in self._tags[x]])
+            data.end()
+        data.end() # frames
+        data.end() # workspace
+
+    def load(self, data: Data):
+        data.begin('workspace')
+        data.begin('frames')
+
+        for key in list(data.current().keys()):
+            wid: int = -1
+            try:
+                wid = int(key)
+            except:
+                continue
+            
+            # print('Preloading..')
+            data.begin(key)
+            tags = data.getval('tags', [])
+            order = data.getval('order', -1)
+            # print('Loading:', tags)
+            # if isinstance(tags, list):
+            #     self._preload[wid] = Preload(tags, order)
+                # print('PRELOADED')
+            self._preload[wid] = Preload(tags, order)
+            data.end()
+
+            # frame = self.__frame_from_pid(pid)
+            # if frame == None:
+            #     continue
+            
+            # data.begin(key)
+            # tags = data.getval('tags')
+            # print('Loading:', tags)
+            # if isinstance(tags, list[int]):
+            #     for idx in tags:
+            #         tag = self._tags[idx]
+            #         tag.add(f)
+            # data.end()
+
+        data.end()
+        data.end()
+
+    def __frame_from_pid(self, pid: int) -> Frame | None:
+        for frame in self._frames:
+            if frame.window.pid == pid:
+                return frame
+        
+        return None
 
     def __window_opened(self, wayfire: WayfireService, window: WayfireWindow):
         def on_closed(frame: Frame):
@@ -149,6 +228,7 @@ class Workspace(DataGObject):
             self.notify("frames")
 
             if idx != self._active_idx:
+                self.emit('state_changed')
                 return
 
             new_idx = self._active_idx - 1
@@ -167,14 +247,36 @@ class Workspace(DataGObject):
             self.notify("active_frame")
             self.emit("active_changed", frame, self.active_frame)
             self.__refresh_tag_focus()
+
+            self.emit('state_changed')
+
         
         frame = Frame(window, self)
-        self._frames.append(frame)
         frame.connect("closed", on_closed)
+        self._frames.append(frame)
 
-        self._tags[0].add(frame)
+        # self._tags[0].add(frame)
+
+        # print('Window opening..', self._preload)
+
+        if window.id in self._preload:
+            # print('Hello..')
+            data: Preload = self._preload.pop(window.id)
+            for idx in data.tags:
+                try:
+                    self._tags[idx].add(frame)
+                except:
+                    pass
+            
+            if data.order >= 0:
+                frame._order = data.order
+                self._frames.sort(key=lambda frame: frame._order)
 
         self.notify("frames")
+
+        self.emit('state_changed')
+
+        self.__refresh_tag_focus()
 
         # if len(self._frames) == 1:
             # self.__set_active(0)
@@ -197,6 +299,7 @@ class Workspace(DataGObject):
 
         self.emit('active_moved', old_idx, idx)
 
+        self.emit('state_changed')
         # fa = self._frames[a]
         # fb = self._frames[b]
         

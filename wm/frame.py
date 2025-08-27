@@ -16,6 +16,8 @@ class Frame(DataGObject):
         self._grab: bool = False
         self._refcount: int = 0
 
+        self._order: int = -1 # internal value
+
         workspace.connect("active_changed", self._active_changed)
 
         win.connect("closed", lambda win: self.emit("closed"))

@@ -25,7 +25,7 @@ from ignis.app import IgnisApp
 from status import Bar
 
 # from .switcher import Compositor
-from utils import WayfireService, WayfireWindow
+from utils import WayfireService, WayfireWindow, Data
 
 from wm import Workspace
 from frame import Hotbar
@@ -50,7 +50,45 @@ def main():
     app_dir = osp.dirname(osp.abspath(__file__))
     app.apply_css(osp.join(app_dir, 'style.scss'))
 
+
+    # data = Data()
+    # if data.load():
+    #     print(data.current())
+    #     data.begin('hotbar')
+    #     # print(data.current())
+    #     data.begin('windows')
+    #     # print(data.current())
+    #     for pid in data.current().keys():
+    #         data.begin(pid)
+    #         print(' >', data.current())
+    #         data.end()
+    #     # wins = data.getval('windows')
+    #     # for w in wins:
+    #     #     print('wind:', w)
+    #     data.end()
+    #     data.end()
+    
+    # print('=======================')
+
     work = Workspace()
+
+    data = Data()
+    if data.load():
+        work.load(data)
+
+    # def shutdown(x):
+    #     # Remove all stored Data
+    #     data.clear()
+    #     data.save()
+
+    # app.connect('shutdown', shutdown)
+
+    def save_data(x):
+        work.save(data)
+
+        data.save()
+
+    work.connect('state_changed', save_data)
 
     bind('<super> KEY_Q', work.left)
     bind('<super> KEY_W', work.right)
@@ -65,7 +103,6 @@ def main():
         Bar(i)
         hotbars.append(Hotbar(i, work))
 
-    
     # def show():
     #     for hb in hotbars:
     #         hb.show()
@@ -79,8 +116,25 @@ def main():
 
     wayfire.begin_listening()
 
-    work.right()
+    # work.right()
+    # data.begin('hotbar')
+    
+    # data.begin('windows')
+    
+    # data.begin('2472')
+    # data.setval('tags', [ 4, 1, 7 ])
+    # data.end()
 
+    # data.begin('284')
+    # data.setval('tags', [ 4, 1, 7 ])
+    # data.end()
+
+    # data.end() # windows
+
+    # data.end() # hotbar
+
+    # data.save()
+    
 
     # time.sleep(1.5)
 
