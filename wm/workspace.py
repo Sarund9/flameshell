@@ -19,6 +19,7 @@ from dataclasses import dataclass
 class Preload:
     tags: list[int]
     order: int
+    active: bool
 
 
 class Workspace(DataGObject):
@@ -31,6 +32,7 @@ class Workspace(DataGObject):
         self._shown: bool = False
         self._grab: bool = False
         self._focus_active_wd: int = 0
+        self._debug: int = 0
 
         # Create list of Tags 1-9
         self._tags: list[Tag] = list([Tag() for i in range(1, 10)])
@@ -161,6 +163,13 @@ class Workspace(DataGObject):
 
     def save(self, data: Data):
         data.begin('workspace')
+
+        actv: int = -1
+        if self.active_frame:
+            actv = self.active_frame.window.id
+
+        data.setval('active_frame_id', actv)
+
         data.begin('frames')
         data.clear() # Removes all other keys from Current
         for idx, frame in enumerate(self._frames):
@@ -170,10 +179,14 @@ class Workspace(DataGObject):
             data.setval('tags', [x for x in range(0, 9) if frame in self._tags[x]])
             data.end()
         data.end() # frames
+
         data.end() # workspace
 
     def load(self, data: Data):
         data.begin('workspace')
+
+        active = data.getval('active_frame_id', -1)
+
         data.begin('frames')
 
         for key in list(data.current().keys()):
@@ -191,7 +204,7 @@ class Workspace(DataGObject):
             # if isinstance(tags, list):
             #     self._preload[wid] = Preload(tags, order)
                 # print('PRELOADED')
-            self._preload[wid] = Preload(tags, order)
+            self._preload[wid] = Preload(tags, order, wid == active)
             data.end()
 
             # frame = self.__frame_from_pid(pid)
@@ -259,6 +272,8 @@ class Workspace(DataGObject):
 
         # print('Window opening..', self._preload)
 
+        active_set = False
+
         if window.id in self._preload:
             # print('Hello..')
             data: Preload = self._preload.pop(window.id)
@@ -271,8 +286,18 @@ class Workspace(DataGObject):
             if data.order >= 0:
                 frame._order = data.order
                 self._frames.sort(key=lambda frame: frame._order)
+            
+            if data.active:
+                active_set = True
+
 
         self.notify("frames")
+
+        if active_set:
+            idx = self._frames.index(frame)
+            print('A')
+            self.__set_active(idx)
+            # print("SET ACTIVE:", idx, "-", self.active_frame.window.title)
 
         self.emit('state_changed')
 
@@ -318,35 +343,49 @@ class Workspace(DataGObject):
         # focus = wayfire.focused_window
         # active: Frame = self.active_frame
         # if active.window.id == wayfire.foc
-        # print("$ Refocus")
+        # print("$ Refocus:", wayfire.focused_window.title)
         
         if not wayfire.focused_window:
             # print("Not focused ?")
             return
-        
-        idx = -1
-        for i, frame in enumerate(self._frames):
-            if not frame.window or not wayfire.focused_window:
-                continue
-            if frame.window.id == wayfire.focused_window.id:
-                idx = i
-                break
-        
-        if idx < 0:
+        if not self.active_frame:
             return
         
-        if self._shown:
-            # print("Cannot:", self._frames[idx].window.title)
+        if self.active_frame.window.id == wayfire.focused_window.id:
             return
+
+        # Force the Active window to be Focused
+        try:
+            self.active_frame.window.focus()
+        except:
+            # print('=== Error on Focus ===')
+            pass
+
+        # idx = -1
+        # for i, frame in enumerate(self._frames):
+        #     if not frame.window or not wayfire.focused_window:
+        #         continue
+        #     if frame.window.id == wayfire.focused_window.id:
+        #         idx = i
+        #         break
+        
+        # if idx < 0:
+        #     return
+        
+        # if self._shown:
+        #     # print("Cannot:", self._frames[idx].window.title)
+        #     return
         
         # print("$$$:", self._frames[idx].window.title)
 
-        if self._focus_active_wd < 2:
-            self.__set_active(idx, False)
-            self._focus_active_wd += 1
+        # self.__set_active(idx, False)
+        # if self._focus_active_wd < 2:
+            # print('Focused Active ')
+            # self._focus_active_wd += 1
         #     print("Focused Active", self._focus_active_wd)
 
     def __set_active(self, idx: int, focus: bool = True):
+
         prev: Frame = None
         curr: Frame = None
         if self._active_idx > -1:
@@ -365,23 +404,51 @@ class Workspace(DataGObject):
 
         self.notify("active_frame")
         self.emit("active_changed", prev, curr)
-        if not focus:
-            return
+        # if not focus:
+        #     return
+
+        # self._debug += 1
+
+        # print(f'{self._debug:000} SET ACTIVE:', idx)
 
         # print("ACTIVE SET")
-        self.__refresh_tag_focus()
+        # self.__refresh_tag_focus()
 
         # if prev:
         #     prev.tag_unref()
 
         # Focus the window
         if curr:
-            self._focus_active_wd = 0
+            
             # curr.tag_ref()
-            curr.window.focus()
+            if focus:
+                curr.window.focus()
+
+        if focus:
+            self.__refresh_tag_focus()
+
+        # if not focus:
+        #     self.__refresh_tag_focus()
+        #     self._focus_active_wd = 0
+        # elif self._focus_active_wd < 1:
+        #     self.__refresh_tag_focus()
+        #     self._focus_active_wd += 1
 
     def __refresh_tag_focus(self):
         # print("Refresh Tag Focus")
+        # actv: Frame = None
+        # actv_c: bool = False
+        # if self.active_frame:
+        #     actv = self.active_frame
+        #     actv_c = True
+        
+        # if actv_c:
+        #     actv.tag_ref()
+
         for tag in self._tags:
             tag.focused = self.active_frame in tag
+        
+        # if actv_c:
+        #     actv.tag_unref()
+
         # print("Refresh")

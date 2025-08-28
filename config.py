@@ -8,6 +8,8 @@ import time
 from typing import Any
 from dataclasses import dataclass
 
+# from pywayland.protocol.input_method_unstable_v1
+
 # import gi.widgets as gw # type: ignore
 from gi.repository import Gtk # type: ignore
 from gi.repository import Graphene # type: ignore
@@ -111,8 +113,9 @@ def main():
         work.shown_set(not work.shown)
         # print("Show")
 
-    bind('<super> KEY_TAB', show)
+    # bind('<super> KEY_TAB', show)
     # bind('KEY_LEFTMETA', show)
+    bind('KEY_F20', show)
 
     wayfire.begin_listening()
 
@@ -248,7 +251,7 @@ class Debug(Window):
         )
 
 
-Debug(0)
+# Debug(0)
 
 
 main()

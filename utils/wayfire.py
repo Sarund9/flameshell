@@ -394,6 +394,8 @@ class WayfireService(BaseService):
                 pass # TODO
             case "view-geometry-changed":
                 self.__window_moved(msg.get("old-geometry"), msg.get("view"))
+            case "view-tiled":
+                pass # TODO
             case "view-set-output": # This was the First Message
                 # output: None
                 # view
